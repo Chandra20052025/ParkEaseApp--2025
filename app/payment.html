@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment - ParkEase</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+    import { firebaseConfig } from './firebaseConfig.js';
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .payment-wrapper {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: #2ca7c9;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .payment-container {
+      background-color: white;
+      padding: 35px 30px;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .payment-container .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: #2ca7c9;
+      margin-bottom: 6px;
+    }
+
+    .payment-container h2 {
+      font-size: 20px;
+      color: #2c3e50;
+      margin-bottom: 6px;
+    }
+
+    .payment-container .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 25px;
+    }
+
+    .amount-display {
+      background-color: #e8f7fb;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 22px;
+    }
+
+    .amount-display p {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    .amount-display .amount {
+      font-size: 28px;
+      font-weight: 700;
+      color: #2ca7c9;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #444;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      transition: border-color 0.3s;
+      background: white;
+    }
+
+    .form-group input:focus {
+      border-color: #2ca7c9;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(44, 167, 201, 0.15);
+    }
+
+    .pay-button {
+      width: 100%;
+      padding: 13px;
+      background-color: #2ca7c9;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background-color 0.3s, transform 0.1s;
+    }
+
+    .pay-button:hover {
+      background-color: #2187a5;
+    }
+
+    .pay-button:active {
+      transform: scale(0.98);
+    }
+
+    .pay-button:disabled {
+      background-color: #a0d8e8;
+      cursor: not-allowed;
+    }
+
+    .skip-link {
+      display: block;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #888;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .skip-link:hover {
+      color: #555;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 12px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="payment-wrapper">
+    <a class="back-link" onclick="history.back()">← Back</a>
+
+    <div class="payment-container">
+      <div class="logo">🅿 ParkEase</div>
+      <h2>Complete Payment</h2>
+      <p class="subtitle">Pay securely via UPI to confirm your booking</p>
+
+      <div class="amount-display">
+        <p>Amount Due</p>
+        <div class="amount">₹50.00</div>
+      </div>
+
+      <div class="form-group">
+        <label for="upiId">UPI ID</label>
+        <input type="text" id="upiId" placeholder="e.g. yourname@upi" autocomplete="off" />
+      </div>
+
+      <button class="pay-button" id="payBtn" onclick="payNow()">Pay ₹50 Now</button>
+
+      <a class="skip-link" onclick="skipPayment()">Skip for now →</a>
+
+      <p class="note">You will be redirected to your UPI app to complete payment.</p>
+    </div>
+  </div>
+
+  <script>
+    function payNow() {
+      const upiId = document.getElementById('upiId').value.trim();
+
+      if (!upiId) {
+        alert("Please enter your UPI ID.");
+        return;
+      }
+
+      // Basic UPI ID format validation
+      const upiRegex = /^[\w.\-]+@[\w]+$/;
+      if (!upiRegex.test(upiId)) {
+        alert("Please enter a valid UPI ID (e.g. name@upi).");
+        return;
+      }
+
+      const payBtn = document.getElementById('payBtn');
+      payBtn.disabled = true;
+      payBtn.textContent = "Redirecting...";
+
+      const payeeVPA = "yourupiid@bank"; // Replace with your actual UPI ID
+      const payeeName = "ParkEase Parking";
+      const amount = 50;
+      const transactionNote = "Parking Slot Booking";
+
+      const upiUrl = `upi://pay?pa=${encodeURIComponent(payeeVPA)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+
+      window.location.href = upiUrl;
+
+      // Fallback if UPI app doesn't open
+      setTimeout(() => {
+        payBtn.disabled = false;
+        payBtn.textContent = "Pay ₹50 Now";
+        alert("If your UPI app did not open, please pay manually through your UPI app to:\nUPI ID: " + payeeVPA);
+      }, 2500);
+    }
+
+    function skipPayment() {
+      if (confirm("Are you sure you want to skip payment? Your booking is confirmed but payment is pending.")) {
+        window.location.href = "Frame3.html";
+      }
+    }
+  </script>
+
+</body>
+</html>

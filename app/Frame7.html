@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Park Ease</title>
+  <link rel="stylesheet" href="Frame7.css">
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBymgcR5e-JRvkARi2JTmo1_zNvD4JIWgU",
+      authDomain: "parkease-52cd5.firebaseapp.com",
+      projectId: "parkease-52cd5",
+      storageBucket: "parkease-52cd5.firebasestorage.app",
+      messagingSenderId: "771148281265",
+      appId: "1:771148281265:web:56145356b5d02fa00bb990",
+      measurementId: "G-GGDS554MBR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    async function logout() {
+      try {
+        await signOut(auth);
+        alert("Logged out successfully!");
+        window.location.href = 'Frame2.html';
+      } catch (error) {
+        alert("Failed to logout. Try again.");
+      }
+    }
+
+    async function searchUser() {
+      const vehicleNumber = document.getElementById('search-vehicle-no').value.trim();
+      const resultsContainer = document.getElementById('search-results');
+      if (!vehicleNumber) { resultsContainer.innerHTML = '<p>Please enter a vehicle number.</p>'; return; }
+      resultsContainer.innerHTML = '<p>Searching...</p>';
+      try {
+        const q = query(collection(db, 'Users'), where('vehicleNo', '==', vehicleNumber));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+          resultsContainer.innerHTML = '<p>No user found with that vehicle number.</p>';
+        } else {
+          let resultsHTML = '<h3>User Details:</h3>';
+          querySnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+            resultsHTML += `
+              <p><b>Name:</b> ${userData.name || 'N/A'}</p>
+              <p><b>Mobile:</b> ${userData.mobile || 'N/A'}</p>
+              <p><b>Email:</b> ${userData.email || 'N/A'}</p>
+              <p><b>Vehicle Number:</b> ${userData.vehicleNo || 'N/A'}</p>`;
+          });
+          resultsContainer.innerHTML = resultsHTML;
+        }
+      } catch (error) {
+        console.error("Error searching:", error);
+        resultsContainer.innerHTML = '<p>Error searching. Please try again.</p>';
+      }
+    }
+
+    window.searchUser = searchUser;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelector(".user-icon").addEventListener("click", () => {
+        document.getElementById("user-info-box").style.display = "block";
+        document.getElementById("overlay").style.display = "block";
+      });
+      document.getElementById("close-btn").addEventListener("click", () => {
+        document.getElementById("user-info-box").style.display = "none";
+        document.getElementById("overlay").style.display = "none";
+      });
+      document.getElementById("menu-btn").addEventListener("click", (event) => {
+        const dd = document.getElementById("dropdown-menu");
+        dd.style.display = dd.style.display === "block" ? "none" : "block";
+        event.stopPropagation();
+      });
+      document.addEventListener("click", (event) => {
+        const dd = document.getElementById("dropdown-menu");
+        if (!dd.contains(event.target) && event.target.id !== "menu-btn") dd.style.display = "none";
+      });
+      document.getElementById("dropdown-menu").addEventListener("click", (e) => e.stopPropagation());
+      document.getElementById('logout').addEventListener('click', logout);
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const userDocSnap = await getDoc(doc(db, "Users", user.uid));
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data();
+              document.getElementById("name").value = userData.name || "";
+              document.getElementById("vehicleNo").value = userData.vehicleNo || "";
+              document.getElementById("licenseNo").value = userData.licenseNo || "";
+              document.getElementById("mobile").value = userData.mobile || "";
+            }
+          } catch (error) { console.error("Error fetching user data:", error); }
+        } else {
+          alert("Please log in to access this page.");
+          window.location.href = 'Frame2.html';
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <img src="images/node-2.svg" alt="ParkEase Logo" />
+      <h1>ParkEase</h1>
+    </div>
+    <div class="icons">
+      <button class="user-icon" id="user-btn" aria-label="User Info">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12ZM12 14C8.13401 14 5 16.6863 5 20V21H19V20C19 16.6863 15.866 14 12 14Z" fill="black"/>
+        </svg>
+      </button>
+      <button class="menu-icon" id="menu-btn" aria-label="Menu">&#9776;</button>
+      <div class="dropdown" id="dropdown-menu" role="menu" aria-hidden="true">
+        <button onclick="location.href='edit.html'">Edit Profile</button>
+        <button onclick="location.href='privacy.html'">Privacy Policy</button>
+        <button onclick="location.href='aboutus.html'">About Us</button>
+        <button onclick="location.href='faq.html'">Help & FAQ</button>
+        <button id="logout" aria-haspopup="true">Log Out</button>
+      </div>
+      <div class="overlay" id="overlay" tabindex="-1"></div>
+      <div class="user-info-box" id="user-info-box" role="dialog" aria-modal="true" aria-labelledby="user-info-label">
+        <label id="user-info-label">User Name</label><input type="text" id="name" readonly />
+        <label>Vehicle No</label><input type="text" id="vehicleNo" readonly />
+        <label>Driving License No</label><input type="text" id="licenseNo" readonly />
+        <label>Phone No</label><input type="text" id="mobile" readonly />
+        <button class="close-btn" id="close-btn">Close</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="parking-container">
+    <img src="images/car.jpg" alt="Parking Lot" />
+    <div class="search-container">
+      <h2>Search User by Vehicle Number</h2>
+      <input type="text" id="search-vehicle-no" class="search-bar" placeholder="Enter Vehicle Number">
+      <button class="search-button" onclick="searchUser()">Search</button>
+      <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <hr>
+  <h2>Why you should park with us?</h2>
+  <div class="features">
+    <div class="feature-button">📹 CCTV</div>
+    <div class="feature-button">🔍 Vehicle Inspection</div>
+    <div class="feature-button">🚧 Fenced</div>
+    <div class="feature-button">🅿️ Paved Surface</div>
+  </div>
+</body>
+</html>

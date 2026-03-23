@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ParkEase</title>
+    <link rel="stylesheet" href="Frame2.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="top-bar">
+        <div class="logo">
+            <img src="images/node-3.png" alt="ParkEase Logo">
+            <h2>ParkEase</h2>
+        </div>
+        <div class="features">
+            <div class="feature">📹 CCTV</div>
+            <div class="feature">🔍 Vehicle Inspection</div>
+            <div class="feature">🚧 Fenced</div>
+            <div class="feature">🅿️ Paved Surface</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="image-section">
+            <img src="images/image-2-4.png" alt="Parking Image">
+        </div>
+        <div class="form-section">
+            <h2 id="form-title">Login to ParkEase</h2>
+
+            <!-- Login Form -->
+            <div id="login-form">
+                <label>Email</label>
+                <input type="email" id="login-email" placeholder="Enter your email">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password">
+                <p id="login-error" style="color: red; display: none;"></p>
+                <button id="login-button">Login</button>
+                <div class="toggle-btn" onclick="toggleForm()">Don't have an account? Sign up</div>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="hidden">
+                <label>Username</label>
+                <input type="text" id="signup-name" placeholder="Enter your username">
+                <label>Email</label>
+                <input type="email" id="signup-email" placeholder="Enter your email">
+                <label>Mobile No.</label>
+                <input type="text" id="signup-mobile" placeholder="Enter your mobile number">
+                <label>Vehicle No.</label>
+                <input type="text" id="signup-vehicleNo" placeholder="Enter your vehicle number">
+                <label>Driving License No.</label>
+                <input type="text" id="signup-licenseNo" placeholder="Enter your license number">
+                <label>Password</label>
+                <input type="password" id="signup-password" placeholder="Enter your password">
+                <p id="validation-error" style="color: red; display: none;"></p>
+                <button id="signup-button">Sign Up</button>
+                <div class="toggle-btn" onclick="toggleForm()">Already have an account? Login</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleForm() {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const formTitle = document.getElementById('form-title');
+            loginForm.classList.toggle('hidden');
+            signupForm.classList.toggle('hidden');
+            formTitle.innerText = signupForm.classList.contains('hidden')
+                ? 'Login to ParkEase'
+                : 'Sign Up to ParkEase';
+            document.getElementById('validation-error').style.display = 'none';
+            document.getElementById('login-error').style.display = 'none';
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBymgcR5e-JRvkARi2JTmo1_zNvD4JIWgU",
+            authDomain: "parkease-52cd5.firebaseapp.com",
+            projectId: "parkease-52cd5",
+            storageBucket: "parkease-52cd5.firebasestorage.app",
+            messagingSenderId: "771148281265",
+            appId: "1:771148281265:web:56145356b5d02fa00bb990",
+            measurementId: "G-GGDS554MBR"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // ── Save user to Firestore AFTER auth account is created ──────────────
+        // FIX: Uniqueness check removed — it was querying Firestore before
+        // the user was authenticated, causing "Missing or insufficient permissions".
+        // Firebase Auth already prevents duplicate emails automatically.
+        async function createUser(userId, email, name, mobile, licenseNo, vehicleNo) {
+            try {
+                const userDocRef = doc(db, "Users", userId);
+                await setDoc(userDocRef, { email, mobile, name, licenseNo, vehicleNo });
+                console.log("User created successfully!");
+            } catch (error) {
+                console.error("Error creating user:", error);
+                throw error;
+            }
+        }
+
+        // ── Signup ────────────────────────────────────────────────────────────
+        async function validateAndSignup() {
+            const errorElement = document.getElementById('validation-error');
+            errorElement.style.display = 'none';
+
+            const email     = document.getElementById('signup-email').value.trim();
+            const name      = document.getElementById('signup-name').value.trim();
+            const mobile    = document.getElementById('signup-mobile').value.trim();
+            const licenseNo = document.getElementById('signup-licenseNo').value.trim();
+            const vehicleNo = document.getElementById('signup-vehicleNo').value.trim();
+            const password  = document.getElementById('signup-password').value.trim();
+
+            // Empty check
+            if (!email || !name || !mobile || !licenseNo || !vehicleNo || !password) {
+                errorElement.style.display = 'block';
+                errorElement.innerText = "All fields are required.";
+                return;
+            }
+
+            // Mobile number check
+            const mobileRegex = /^[0-9]{10}$/;
+            if (!mobileRegex.test(mobile)) {
+                errorElement.style.display = 'block';
+                errorElement.innerText = "Please enter a valid 10-digit mobile number.";
+                return;
+            }
+
+            // Password strength check
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/;
+            if (!passwordRegex.test(password)) {
+                errorElement.style.display = 'block';
+                errorElement.innerText = "Password must have 1 uppercase, 1 number, 1 special character, and 8+ characters.";
+                return;
+            }
+
+            const signupBtn = document.getElementById('signup-button');
+            signupBtn.disabled = true;
+            signupBtn.innerText = "Creating account...";
+
+            try {
+                // Step 1: Create Firebase Auth account
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const newUser = userCredential.user;
+
+                // Step 2: Send verification email
+                await sendEmailVerification(newUser);
+
+                // Step 3: Save user data to Firestore (user is now authenticated)
+                await createUser(newUser.uid, email, name, mobile, licenseNo, vehicleNo);
+
+                alert("Account created successfully! Please check your email to verify your address before logging in.");
+                toggleForm();
+
+            } catch (error) {
+                console.error("Error during signup:", error);
+                errorElement.style.display = 'block';
+                if (error.code === 'auth/email-already-in-use') {
+                    errorElement.innerText = "This email is already registered. Please login.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorElement.innerText = "Password is too weak. Use at least 6 characters.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorElement.innerText = "Please enter a valid email address.";
+                } else {
+                    errorElement.innerText = "Signup failed: " + error.message;
+                }
+            } finally {
+                signupBtn.disabled = false;
+                signupBtn.innerText = "Sign Up";
+            }
+        }
+
+        // ── Login ─────────────────────────────────────────────────────────────
+        async function login() {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorElement = document.getElementById('login-error');
+            errorElement.style.display = 'none';
+
+            if (!email || !password) {
+                errorElement.style.display = 'block';
+                errorElement.innerText = "Email and password are required.";
+                return;
+            }
+
+            const loginBtn = document.getElementById('login-button');
+            loginBtn.disabled = true;
+            loginBtn.innerText = "Logging in...";
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+                // Check email is verified
+                if (!userCredential.user.emailVerified) {
+                    errorElement.style.display = 'block';
+                    errorElement.innerText = "Please verify your email before logging in. Check your inbox.";
+                    return;
+                }
+
+                window.location.href = 'Frame3.html';
+
+            } catch (error) {
+                console.error("Error during login:", error);
+                errorElement.style.display = 'block';
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorElement.innerText = "Incorrect email or password.";
+                } else if (error.code === 'auth/user-not-found') {
+                    errorElement.innerText = "No account found with this email.";
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorElement.innerText = "Too many attempts. Please try again later.";
+                } else if (error.code === 'auth/invalid-email') {
+                    errorElement.innerText = "Please enter a valid email address.";
+                } else {
+                    errorElement.innerText = "Login failed: " + error.message;
+                }
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerText = "Login";
+            }
+        }
+
+        document.getElementById('signup-button').addEventListener('click', validateAndSignup);
+        document.getElementById('login-button').addEventListener('click', login);
+    </script>
+</body>
+</html>

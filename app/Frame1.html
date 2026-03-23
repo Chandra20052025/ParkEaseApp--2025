@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no">
+  <title>ParkEase</title>
+  <link rel="stylesheet" href="Frame1.css">
+  <script type="module">
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+    import { firebaseConfig } from './firebaseConfig.js';
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+</head>
+<body>
+<div class="container">
+<img src="images/node-2.svg" class="logo" alt="ParkEase Logo" />
+<h1 id="name">ParkEase</h1>
+<button id="button" class="hidden" onclick="location.href= 'Frame2.html'">Start →</button>
+</div>
+
+<script>
+  setTimeout(() => {
+    document.querySelector(".logo").classList.add("move-left");
+    document.getElementById("name").classList.add("show");
+    document.getElementById("button").classList.remove("hidden");
+  }, 1000);
+</script>
+
+</body>
+</html>
+

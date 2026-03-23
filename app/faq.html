@@ -1,0 +1,137 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Help & FAQ - ParkEase</title>
+  <link rel="stylesheet" href="Frame8.css">
+</head>
+<body>
+  <header>
+    <div class="logo-container" onclick="location.href='Frame3.html'">
+      <img src="images/node-2.svg" alt="ParkEase Logo" />
+      <h1>ParkEase</h1>
+    </div>
+  </header>
+
+  <main>
+    <h2>Help & FAQ</h2>
+
+    <section class="faq-section">
+      <h3>Frequently Asked Questions</h3>
+
+      <details>
+        <summary>How do I book a parking slot?</summary>
+        <p>Log in to your ParkEase account, go to the dashboard and select "Slot Booking". Choose Car or Bike, pick your date and time, select an available slot, then click "Book Slot". You'll be redirected to complete payment.</p>
+      </details>
+      <br>
+
+      <details>
+        <summary>Can I borrow a parking slot from a friend?</summary>
+        <p>Yes! Go to the "Friends List" page, find your friend, and click "Request". Fill in the date, time, and vehicle type. Your friend will receive a notification and can approve or deny the request.</p>
+      </details>
+      <br>
+
+      <details>
+        <summary>How can I view my booking history?</summary>
+        <p>From the dashboard, click "Booking History". This shows all your past and upcoming bookings with their status — Confirmed, Active, Expired, or Cancelled.</p>
+      </details>
+      <br>
+
+      <details>
+        <summary>How do I cancel a booking?</summary>
+        <p>Go to "Booking History", find your confirmed booking, and click the "Cancel" button. Cancellation is only available for future bookings that haven't started yet.</p>
+      </details>
+      <br>
+
+      <details>
+        <summary>How do I add friends?</summary>
+        <p>Go to the "Friends List" page and search for a user by their name. Click "Add to Friends" to add them to your list. You can then send them parking slot requests.</p>
+      </details>
+      <br>
+
+      <details>
+        <summary>How do I update my profile?</summary>
+        <p>Click the menu icon (☰) in the top right, then select "Edit Profile". Update your name, vehicle number, license number, or mobile number and click "Save Changes".</p>
+      </details>
+      <br>
+
+      <details>
+        <summary>How do I contact support?</summary>
+        <p>Use the help box below to submit your question, or email us at support@parkease.com. Our team responds within 24–48 hours.</p>
+      </details>
+      <br>
+    </section>
+
+    <section class="help-box">
+      <h3>Still Need Help?</h3>
+      <p style="margin-bottom: 12px; color: #555; font-size: 14px;">Submit your question below and our support team will get back to you within 24–48 hours.</p>
+      <textarea id="help-question" placeholder="Type your question here..."></textarea>
+      <button id="submit-question">Submit Question</button>
+      <p id="submit-status" style="margin-top: 10px; font-size: 13px; display: none;"></p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // FIX: Import from shared config file instead of hardcoding
+    import { firebaseConfig } from './firebaseConfig.js';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    async function submitQuestion(userId, question) {
+      try {
+        await addDoc(collection(db, 'HelpQuestions'), {
+          userId,
+          question,
+          timestamp: new Date(),
+          status: 'pending'
+        });
+        const status = document.getElementById('submit-status');
+        status.textContent = "✅ Question submitted! We'll get back to you within 24–48 hours.";
+        status.style.color = "green";
+        status.style.display = "block";
+        document.getElementById('help-question').value = '';
+      } catch (err) {
+        console.error('Error submitting question:', err);
+        const status = document.getElementById('submit-status');
+        status.textContent = "❌ Failed to submit. Please try again.";
+        status.style.color = "red";
+        status.style.display = "block";
+      }
+    }
+
+    document.getElementById('submit-question').addEventListener('click', async () => {
+      const question = document.getElementById('help-question').value.trim();
+      const status = document.getElementById('submit-status');
+      status.style.display = "none";
+
+      if (!question) {
+        status.textContent = "Please enter a question before submitting.";
+        status.style.color = "red";
+        status.style.display = "block";
+        return;
+      }
+
+      const user = auth.currentUser;
+      if (user) {
+        await submitQuestion(user.uid, question);
+      } else {
+        alert('Please log in to submit a question.');
+        window.location.href = 'Frame2.html';
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        alert('Please login to view this page.');
+        window.location.href = 'Frame2.html';
+      }
+    });
+  </script>
+</body>
+</html>

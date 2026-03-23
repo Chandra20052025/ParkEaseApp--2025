@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ParkEase</title>
+  <link rel="stylesheet" href="Frame5.css">
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <img src="images/node-2.svg" alt="ParkEase Logo">
+      <h1>ParkEase</h1>
+    </div>
+    <div class="icons">
+      <button class="user-icon" id="user-btn" aria-label="User Info">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12ZM12 14C8.13401 14 5 16.6863 5 20V21H19V20C19 16.6863 15.866 14 12 14Z" fill="black"/>
+        </svg>
+      </button>
+      <button class="menu-icon" id="menu-btn" aria-label="Menu">&#9776;</button>
+      <div class="dropdown" id="dropdown-menu" role="menu" aria-hidden="true">
+        <button onclick="location.href='edit.html'">Edit Profile</button>
+        <button onclick="location.href='privacy.html'">Privacy Policy</button>
+        <button onclick="location.href='aboutus.html'">About Us</button>
+        <button onclick="location.href='faq.html'">Help & FAQ</button>
+        <button id="logout" aria-haspopup="true">Log Out</button>
+      </div>
+      <div class="overlay" id="overlay" tabindex="-1"></div>
+      <div class="user-info-box" id="user-info-box" role="dialog" aria-modal="true" aria-labelledby="user-info-label">
+        <label id="user-info-label">User Name</label>
+        <input type="text" id="name" readonly>
+        <label>Vehicle No</label>
+        <input type="text" id="vehicleNo" readonly>
+        <label>Driving License No</label>
+        <input type="text" id="licenseNo" readonly>
+        <label>Phone No</label>
+        <input type="text" id="mobile" readonly>
+        <button class="close-btn" id="close-btn">Close</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="parking-container">
+      <div class="left-section">
+        <img src="images/car.jpg" alt="Parked Cars" class="parked-car">
+      </div>
+      <div class="button-container">
+        <button class="car-button inactive-btn" onclick="location.href='frame5.html'">CAR</button>
+        <button class="bike-button active-btn">BIKE</button>
+      </div>
+      <div class="right-section">
+        <h2>Select Parking (Bike)</h2>
+        <div class="date-time-container" style="margin-bottom:10px;margin-top:20px;">
+          <div style="display:flex;gap:15px;flex-wrap:wrap;">
+            <div><label for="fromDate">From Date:</label><br><input type="date" id="fromDate"></div>
+            <div><label for="toDate">To Date:</label><br><input type="date" id="toDate"></div>
+            <div><label for="fromTime">From Time:</label><br><input type="time" id="fromTime"></div>
+            <div><label for="toTime">To Time:</label><br><input type="time" id="toTime"></div>
+          </div>
+        </div>
+        <div class="availability-info" id="availabilityInfo">
+          <h4>Availability Status</h4>
+          <p>Please select date and time to see available slots</p>
+        </div>
+        <div class="parking-area">
+          <div class="column">
+            <h3>A</h3>
+            <div class="slots">
+              <button class="slot">A1</button><button class="slot">A2</button>
+              <button class="slot">A3</button><button class="slot">A4</button>
+              <button class="slot">A5</button><button class="slot">A6</button>
+              <button class="slot">A7</button><button class="slot">A8</button>
+            </div>
+          </div>
+          <div class="column">
+            <h3>B</h3>
+            <div class="slots">
+              <button class="slot">B1</button><button class="slot">B2</button>
+              <button class="slot">B3</button><button class="slot">B4</button>
+              <button class="slot">B5</button><button class="slot">B6</button>
+              <button class="slot">B7</button><button class="slot">B8</button>
+            </div>
+          </div>
+        </div>
+        <div class="book-slot-container" style="margin-top:15px;">
+          <button class="book-slot" id="bookBtn" disabled>Book Slot</button>
+        </div>
+        <div style="height:90px;"></div>
+        <hr>
+        <h2 style="text-align:center;margin-top:20px;">Why you should park with us?</h2>
+        <div class="features">
+          <div class="feature-button" style="margin-left:70px;">📹 CCTV</div>
+          <div class="feature-button">🔍 Vehicle Inspection</div>
+          <div class="feature-button">🚧 Fenced</div>
+          <div class="feature-button">🅿 Paved Surface</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBymgcR5e-JRvkARi2JTmo1_zNvD4JIWgU",
+      authDomain: "parkease-52cd5.firebaseapp.com",
+      projectId: "parkease-52cd5",
+      storageBucket: "parkease-52cd5.firebasestorage.app",
+      messagingSenderId: "771148281265",
+      appId: "1:771148281265:web:56145356b5d02fa00bb990",
+      measurementId: "G-GGDS554MBR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    let isIntentionalLogout = false;
+    let currentUserId = null;
+    let selectedSlot = null;
+    let bookedSlotsMap = new Map();
+
+    const slots = document.querySelectorAll(".slot");
+    const bookBtn = document.getElementById("bookBtn");
+    const fromDateInput = document.getElementById("fromDate");
+    const toDateInput = document.getElementById("toDate");
+    const fromTimeInput = document.getElementById("fromTime");
+    const toTimeInput = document.getElementById("toTime");
+    const availabilityInfoEl = document.getElementById("availabilityInfo");
+    const totalSlots = slots.length;
+
+    const today = new Date().toISOString().split("T")[0];
+    fromDateInput.min = today;
+    toDateInput.min = today;
+
+    function formatDateToDisplay(date) {
+      return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function updateBookButtonState() {
+      const allFilled = fromDateInput.value && toDateInput.value && fromTimeInput.value && toTimeInput.value;
+      bookBtn.disabled = !(selectedSlot && allFilled);
+      bookBtn.classList.toggle("active", !!(selectedSlot && allFilled));
+    }
+
+    function isSlotBookedForPeriod(slotId, startTime, endTime) {
+      if (!bookedSlotsMap.has(slotId)) return false;
+      for (const booking of bookedSlotsMap.get(slotId)) {
+        if ((startTime >= booking.start && startTime < booking.end) ||
+            (endTime > booking.start && endTime <= booking.end) ||
+            (startTime <= booking.start && endTime >= booking.end)) return true;
+      }
+      return false;
+    }
+
+    async function loadAllBookings() {
+      bookedSlotsMap.clear();
+      const snapshot = await getDocs(collection(db, "bikeBookings"));
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.cancelled === true) return;
+        const bookedFrom = data.bookedFrom?.toDate ? data.bookedFrom.toDate() : new Date(data.bookedFrom);
+        const bookedTo = data.bookedTo?.toDate ? data.bookedTo.toDate() : new Date(data.bookedTo);
+        if (data.slot) {
+          if (!bookedSlotsMap.has(data.slot)) bookedSlotsMap.set(data.slot, []);
+          bookedSlotsMap.get(data.slot).push({ start: bookedFrom, end: bookedTo });
+        }
+      });
+    }
+
+    async function refreshAvailability() {
+      const fromDate = fromDateInput.value, toDate = toDateInput.value;
+      const fromTime = fromTimeInput.value, toTime = toTimeInput.value;
+      if (!fromDate || !toDate || !fromTime || !toTime) {
+        availabilityInfoEl.innerHTML = `<h4>Availability Status</h4><p>Please select date and time to see available slots</p>`;
+        return;
+      }
+      availabilityInfoEl.innerHTML = `<h4>Availability Status</h4><p>Checking... <span class="loading-indicator"></span></p>`;
+      try {
+        const startDateTime = new Date(`${fromDate}T${fromTime}`);
+        const endDateTime = new Date(`${toDate}T${toTime}`);
+        if (endDateTime <= startDateTime) {
+          availabilityInfoEl.innerHTML = `<h4>Availability Status</h4><p>End time must be after start time.</p>`;
+          return;
+        }
+        await loadAllBookings();
+        let availableCount = 0;
+        slots.forEach(slot => {
+          const isBooked = isSlotBookedForPeriod(slot.innerText, startDateTime, endDateTime);
+          slot.disabled = isBooked;
+          slot.classList.toggle('booked', isBooked);
+          if (!isBooked) availableCount++;
+        });
+        availabilityInfoEl.innerHTML = `
+          <h4>Availability Status</h4>
+          <p>Available: <span class="availability-count">${availableCount}</span> out of ${totalSlots}</p>
+          <p>For: ${formatDateToDisplay(startDateTime)} - ${formatDateToDisplay(endDateTime)}</p>`;
+      } catch (error) {
+        availabilityInfoEl.innerHTML = `<h4>Availability Status</h4><p>Error checking availability.</p>`;
+      }
+    }
+
+    async function loadBookedSlots() {
+      slots.forEach(slot => { slot.disabled = false; slot.classList.remove('booked'); });
+      try {
+        const currentTime = new Date();
+        const snapshot = await getDocs(collection(db, "bikeBookings"));
+        const bookedSlots = new Set();
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data.cancelled === true) return;
+          const bookedTo = data.bookedTo?.toDate ? data.bookedTo.toDate() : new Date(data.bookedTo);
+          if (bookedTo >= currentTime && data.slot) bookedSlots.add(data.slot);
+        });
+        bookedSlots.forEach(slotId => {
+          slots.forEach(slotEl => {
+            if (slotEl.innerText === slotId) { slotEl.disabled = true; slotEl.classList.add('booked'); }
+          });
+        });
+        availabilityInfoEl.innerHTML = `
+          <h4>Availability Status</h4>
+          <p>Currently Available: <span class="availability-count">${totalSlots - bookedSlots.size}</span> out of ${totalSlots}</p>
+          <p>Select date and time to check specific availability</p>`;
+      } catch (error) { console.error("Error loading booked slots:", error); }
+    }
+
+    function setupRealtimeSlotUpdates() {
+      onSnapshot(query(collection(db, "bikeBookings")), () => {
+        if (fromDateInput.value && toDateInput.value && fromTimeInput.value && toTimeInput.value) refreshAvailability();
+        else loadBookedSlots();
+      });
+    }
+
+    async function logout() {
+      try {
+        isIntentionalLogout = true;
+        await signOut(auth);
+        alert("Logged out successfully!");
+        window.location.href = 'Frame2.html';
+      } catch (error) {
+        alert("Failed to logout. Try again.");
+        isIntentionalLogout = false;
+      }
+    }
+
+    slots.forEach((slot) => {
+      slot.addEventListener("click", () => {
+        if (slot.disabled) return;
+        if (selectedSlot && selectedSlot !== slot) selectedSlot.classList.remove("selected");
+        if (selectedSlot === slot) { selectedSlot.classList.remove("selected"); selectedSlot = null; }
+        else { selectedSlot = slot; slot.classList.add("selected"); }
+        updateBookButtonState();
+      });
+    });
+
+    [fromDateInput, toDateInput, fromTimeInput, toTimeInput].forEach((input) => {
+      input.addEventListener("change", () => { updateBookButtonState(); refreshAvailability(); });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelector(".user-icon").addEventListener("click", () => {
+        document.getElementById("user-info-box").style.display = "block";
+        document.getElementById("overlay").style.display = "block";
+      });
+      document.getElementById("close-btn").addEventListener("click", () => {
+        document.getElementById("user-info-box").style.display = "none";
+        document.getElementById("overlay").style.display = "none";
+      });
+      document.getElementById("menu-btn").addEventListener("click", (event) => {
+        const dd = document.getElementById("dropdown-menu");
+        dd.style.display = dd.style.display === "block" ? "none" : "block";
+        event.stopPropagation();
+      });
+      document.addEventListener("click", (event) => {
+        const dd = document.getElementById("dropdown-menu");
+        if (!dd.contains(event.target) && event.target.id !== "menu-btn") dd.style.display = "none";
+      });
+      document.getElementById("dropdown-menu").addEventListener("click", (e) => e.stopPropagation());
+      document.getElementById('logout').addEventListener('click', logout);
+
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUserId = user.uid;
+          try {
+            const userDocSnap = await getDoc(doc(db, "Users", user.uid));
+            if (userDocSnap.exists()) {
+              const userData = userDocSnap.data();
+              document.getElementById("name").value = userData.name || "";
+              document.getElementById("vehicleNo").value = userData.vehicleNo || "";
+              document.getElementById("licenseNo").value = userData.licenseNo || "";
+              document.getElementById("mobile").value = userData.mobile || "";
+            }
+          } catch (error) { console.error("Error fetching user data:", error); }
+
+          bookBtn.addEventListener("click", async () => {
+            if (!selectedSlot) return;
+            const fromDate = fromDateInput.value, toDate = toDateInput.value;
+            const fromTime = fromTimeInput.value, toTime = toTimeInput.value;
+            if (!fromDate || !toDate || !fromTime || !toTime) { alert("Please select dates and times."); return; }
+            const bookedFrom = new Date(`${fromDate}T${fromTime}`);
+            const bookedTo = new Date(`${toDate}T${toTime}`);
+            if (bookedTo <= bookedFrom) { alert("End time must be after start time."); return; }
+            if ((bookedTo - bookedFrom) / (1000 * 60) < 60) { alert("Booking must be at least 60 minutes."); return; }
+            const slotId = selectedSlot.innerText;
+            if (isSlotBookedForPeriod(slotId, bookedFrom, bookedTo)) { alert("Slot no longer available."); refreshAvailability(); return; }
+            const userDocSnap = await getDoc(doc(db, "Users", currentUserId));
+            if (!userDocSnap.exists()) { alert("User data not found."); return; }
+            const userData = userDocSnap.data();
+            if (!userData.name || !userData.email || !userData.mobile || !userData.licenseNo || !userData.vehicleNo) { alert("Please update your profile with all details."); return; }
+            bookBtn.disabled = true;
+            bookBtn.textContent = "Booking...";
+            try {
+              await addDoc(collection(db, "bikeBookings"), {
+                slot: slotId, vehicleType: "bike", bookedAt: new Date(),
+                bookedFrom, bookedTo, userId: currentUserId,
+                name: userData.name, email: userData.email, mobile: userData.mobile,
+                licenseNo: userData.licenseNo, vehicleNo: userData.vehicleNo
+              });
+              selectedSlot.disabled = true;
+              selectedSlot.classList.remove("selected");
+              selectedSlot = null;
+              fromDateInput.value = ''; toDateInput.value = '';
+              fromTimeInput.value = ''; toTimeInput.value = '';
+              alert(`Slot ${slotId} booked successfully!`);
+              window.location.href = "payment.html";
+            } catch (err) {
+              console.error("Booking error:", err);
+              alert("Booking failed. Please try again.");
+            } finally {
+              bookBtn.disabled = false;
+              bookBtn.textContent = "Book Slot";
+            }
+          });
+        } else {
+          if (!isIntentionalLogout) { alert("Please log in to book a slot."); window.location.href = 'Frame2.html'; }
+        }
+      });
+
+      loadBookedSlots();
+      setupRealtimeSlotUpdates();
+      setInterval(async () => {
+        const snapshot = await getDocs(collection(db, "bikeBookings"));
+        const currentTime = new Date();
+        snapshot.forEach(async (docSnap) => {
+          const data = docSnap.data();
+          const bookedTo = data.bookedTo?.toDate ? data.bookedTo.toDate() : new Date(data.bookedTo);
+          if (currentTime > bookedTo && data.status !== 'expired') {
+            await updateDoc(doc(db, "bikeBookings", docSnap.id), { status: "expired" });
+          }
+        });
+      }, 60000);
+    });
+  </script>
+</body>
+</html>

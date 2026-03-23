@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Booking History - ParkEase</title>
+  <link rel="stylesheet" href="Frame8.css">
+</head>
+<body>
+  <header>
+    <div class="logo-container">
+      <img src="images/node-2.svg" alt="ParkEase Logo" />
+      <h1>ParkEase</h1>
+    </div>
+    <div class="icons">
+      <button class="user-icon" id="user-btn" aria-label="User Info">
+        <svg width="24" height="24" viewBox="0 0 24 24">
+          <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12ZM12 14C8.13401 14 5 16.6863 5 20V21H19V20C19 16.6863 15.866 14 12 14Z" fill="black"/>
+        </svg>
+      </button>
+      <button class="menu-icon" id="menu-btn" aria-label="Menu">☰</button>
+      <div class="dropdown" id="dropdown-menu" role="menu" aria-hidden="true">
+        <button onclick="location.href='edit.html'">Edit Profile</button>
+        <button onclick="location.href='privacy.html'">Privacy Policy</button>
+        <button onclick="location.href='aboutus.html'">About Us</button>
+        <button onclick="location.href='faq.html'">Help & FAQ</button>
+        <button id="logout" aria-haspopup="true">Log Out</button>
+      </div>
+      <div class="overlay" id="overlay" tabindex="-1"></div>
+      <div class="user-info-box" id="user-info-box" role="dialog" aria-modal="true" aria-labelledby="user-info-label">
+        <label id="user-info-label">User Name</label><input type="text" id="name" readonly />
+        <label>Vehicle No</label><input type="text" id="vehicleNo" readonly />
+        <label>Driving License No</label><input type="text" id="licenseNo" readonly />
+        <label>Phone No</label><input type="text" id="mobile" readonly />
+        <button class="close-btn" id="close-btn">Close</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <h2>Your Booking History</h2>
+    <table aria-label="Booking History Table" role="grid">
+      <thead>
+        <tr>
+          <th scope="col">Booking ID</th>
+          <th scope="col">Date</th>
+          <th scope="col">Time</th>
+          <th scope="col">Slot</th>
+          <th scope="col">Vehicle Type</th>
+          <th scope="col">Status</th>
+          <th scope="col">Booking Details</th>
+        </tr>
+      </thead>
+      <tbody id="booking-history-body">
+        <tr><td colspan="7">Loading your booking history...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, doc, getDoc, updateDoc, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBymgcR5e-JRvkARi2JTmo1_zNvD4JIWgU",
+      authDomain: "parkease-52cd5.firebaseapp.com",
+      projectId: "parkease-52cd5",
+      storageBucket: "parkease-52cd5.firebasestorage.app",
+      messagingSenderId: "771148281265",
+      appId: "1:771148281265:web:56145356b5d02fa00bb990",
+      measurementId: "G-GGDS554MBR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const bookingTableBody = document.getElementById('booking-history-body');
+    const menuBtn = document.getElementById('menu-btn');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+
+    document.getElementById('user-btn').addEventListener('click', () => {
+      document.getElementById('user-info-box').style.display = 'block';
+      document.getElementById('overlay').style.display = 'block';
+    });
+    document.getElementById('close-btn').addEventListener('click', () => {
+      document.getElementById('user-info-box').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+    });
+    menuBtn.addEventListener('click', (event) => {
+      dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+      event.stopPropagation();
+    });
+    document.addEventListener('click', (event) => {
+      if (!menuBtn.contains(event.target) && !dropdownMenu.contains(event.target)) dropdownMenu.style.display = 'none';
+    });
+    dropdownMenu.addEventListener('click', (e) => e.stopPropagation());
+
+    document.getElementById('logout').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        alert('Logged out successfully!');
+        window.location.href = 'Frame2.html';
+      } catch (error) {
+        alert('Logout failed: ' + error.message);
+      }
+    });
+
+    function formatTimestamp(timestamp) {
+      if (!timestamp) return { dateString: '-', timeString: '-' };
+      const dateObj = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return {
+        dateString: dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+        timeString: dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      };
+    }
+
+    async function loadUserData(userId) {
+      try {
+        const userDoc = await getDoc(doc(db, 'Users', userId));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          document.getElementById('name').value = data.name || '';
+          document.getElementById('vehicleNo').value = data.vehicleNo || '';
+          document.getElementById('licenseNo').value = data.licenseNo || '';
+          document.getElementById('mobile').value = data.mobile || '';
+        }
+      } catch (err) { console.error('Error loading user data:', err); }
+    }
+
+    async function loadBookingHistory(userId) {
+      bookingTableBody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
+      const carQuery = query(collection(db, 'carBookings'), where('userId', '==', userId));
+      const bikeQuery = query(collection(db, 'bikeBookings'), where('userId', '==', userId));
+      let allBookings = [];
+
+      function updateBookingTable(bookings) {
+        if (bookings.length === 0) { bookingTableBody.innerHTML = '<tr><td colspan="7">No bookings found.</td></tr>'; return; }
+        bookings.sort((a, b) => {
+          const aTime = a.bookedFrom ? (a.bookedFrom.toDate ? a.bookedFrom.toDate().getTime() : new Date(a.bookedFrom).getTime()) : 0;
+          const bTime = b.bookedFrom ? (b.bookedFrom.toDate ? b.bookedFrom.toDate().getTime() : new Date(b.bookedFrom).getTime()) : 0;
+          return bTime - aTime;
+        });
+        const currentTime = new Date();
+        bookingTableBody.innerHTML = '';
+        bookings.forEach(booking => {
+          const { dateString, timeString } = formatTimestamp(booking.bookedAt);
+          const fromTime = booking.bookedFrom ? formatTimestamp(booking.bookedFrom) : null;
+          const toTime = booking.bookedTo ? formatTimestamp(booking.bookedTo) : null;
+          const fromDateObj = booking.bookedFrom?.toDate ? booking.bookedFrom.toDate() : (booking.bookedFrom ? new Date(booking.bookedFrom) : null);
+          const toDateObj = booking.bookedTo?.toDate ? booking.bookedTo.toDate() : (booking.bookedTo ? new Date(booking.bookedTo) : null);
+          let displayStatus, statusClass, cancelButton = '';
+          if (booking.cancelled) {
+            displayStatus = 'Cancelled'; statusClass = 'status-cancelled';
+          } else if (fromDateObj && toDateObj) {
+            if (currentTime < fromDateObj) {
+              displayStatus = 'Confirmed'; statusClass = 'status-confirmed';
+              cancelButton = `<button class="cancel-booking-btn" data-id="${booking.id}" data-collection="${booking.collectionPath}">Cancel</button>`;
+            } else if (currentTime > toDateObj) {
+              displayStatus = 'Expired'; statusClass = 'status-expired';
+            } else {
+              displayStatus = 'Active'; statusClass = 'status-active';
+            }
+          } else {
+            displayStatus = 'Unknown'; statusClass = 'status-unknown';
+          }
+          let detailsText = '';
+          if (fromTime && toTime) detailsText = `From: ${fromTime.dateString} ${fromTime.timeString}<br>To: ${toTime.dateString} ${toTime.timeString}`;
+          if (!detailsText) detailsText = '-';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td data-label="Booking ID">${booking.id}</td>
+            <td data-label="Date">${dateString}</td>
+            <td data-label="Time">${timeString}</td>
+            <td data-label="Slot">${booking.slot}</td>
+            <td data-label="Vehicle Type">${booking.vehicleType}</td>
+            <td data-label="Status" class="${statusClass}">${displayStatus} ${cancelButton}</td>
+            <td data-label="Booking Details">${detailsText}</td>`;
+          bookingTableBody.appendChild(tr);
+        });
+
+        document.querySelectorAll('.cancel-booking-btn').forEach(button => {
+          button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            const bookingId = button.getAttribute('data-id');
+            const collectionPath = button.getAttribute('data-collection');
+            try {
+              const bookingRef = doc(db, collectionPath, bookingId);
+              const bookingSnap = await getDoc(bookingRef);
+              if (!bookingSnap.exists()) throw new Error('Booking not found');
+              const bookingData = bookingSnap.data();
+              await updateDoc(bookingRef, { cancelled: true, status: 'Cancelled', lastUpdated: serverTimestamp() });
+              if (bookingData.slot) {
+                const slotCollection = collectionPath === 'carBookings' ? 'carSlots' : 'bikeSlots';
+                const slotDoc = await getDoc(doc(db, slotCollection, bookingData.slot));
+                if (slotDoc.exists()) await updateDoc(doc(db, slotCollection, bookingData.slot), { isBooked: false, bookedBy: null, lastUpdated: serverTimestamp() });
+              }
+              const statusCell = button.closest('tr').querySelector('td[data-label="Status"]');
+              if (statusCell) { statusCell.className = 'status-cancelled'; statusCell.innerHTML = 'Cancelled'; }
+              alert('Booking cancelled successfully!');
+            } catch (error) {
+              console.error('Error cancelling:', error);
+              alert(`Failed to cancel: ${error.message}`);
+            }
+          });
+        });
+      }
+
+      onSnapshot(carQuery, (snapshot) => {
+        allBookings = allBookings.filter(b => b.collectionPath !== 'carBookings');
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          allBookings.push({ id: docSnap.id, slot: data.slot || '-', vehicleType: 'Car', bookedAt: data.bookedAt, bookedFrom: data.bookedFrom, bookedTo: data.bookedTo, cancelled: data.cancelled || false, status: data.status || '', collectionPath: 'carBookings' });
+        });
+        updateBookingTable(allBookings);
+      });
+
+      onSnapshot(bikeQuery, (snapshot) => {
+        allBookings = allBookings.filter(b => b.collectionPath !== 'bikeBookings');
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          allBookings.push({ id: docSnap.id, slot: data.slot || '-', vehicleType: 'Bike', bookedAt: data.bookedAt, bookedFrom: data.bookedFrom, bookedTo: data.bookedTo, cancelled: data.cancelled || false, status: data.status || '', collectionPath: 'bikeBookings' });
+        });
+        updateBookingTable(allBookings);
+      });
+    }
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        loadUserData(user.uid);
+        loadBookingHistory(user.uid);
+      } else {
+        alert('Please login to view your booking history.');
+        window.location.href = 'Frame2.html';
+      }
+    });
+  </script>
+</body>
+</html>
